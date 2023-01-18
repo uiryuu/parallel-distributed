@@ -222,6 +222,31 @@ struct Convolution2D {
       }
     }
   }
+
+  void forward_f(tensor<real,maxB,IC,H,W>& x, int training) {
+    (void)training;
+    idx_t B = x.n0;             // batch size
+    y.set_n0(B);
+    x_ptr = &x;                 // save pointer to input for backward
+    for (idx_t s = 0; s < B; s++) {       // for each sample
+      for (idx_t oc = 0; oc < OC; oc++) { // for each output channel
+        for (idx_t i = 0; i < H - K + 1; i++) {   // for each output pixel
+          for (idx_t j = 0; j < W - K + 1; j++) { // for each output pixel
+            // calculate a single output pixel
+            real v = 0.0;
+            for (idx_t ic = 0; ic < IC; ic++) { // input channel
+              for (idx_t di = 0; di < K; di++) {
+                for (idx_t dj = 0; dj < K; dj++) {
+                  v += w(oc,ic,di,dj) * x(s,ic,i+di,j+dj);
+                }
+              }
+            }
+            y(s,oc,i,j) = v + b(oc);
+          }
+        }
+      }
+    }
+  }
   /**
      @brief the device function of forward called from the 
      global (non-member) function
@@ -287,6 +312,8 @@ struct Convolution2D {
       forward_cpu_base(x, training); break;
     case algo_cuda_base:
       forward_cuda_base(x, training); break;
+    case algo_f:
+      forward_f(x, training); break;
     default:
       if (opt.cuda_algo) {
         forward_cuda_base(x, training);

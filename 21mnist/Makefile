@@ -27,7 +27,7 @@
 #
 vers :=
 vers += cpu_base
-vers += cuda_base
+#vers += cuda_base
 #vers += fast
 
 #
@@ -47,6 +47,11 @@ flags += -DARRAY_INDEX_CHECK=0
 #flags += -DARRAY_INDEX_CHECK=1
 flags += -Dreal_type=float
 #flags += -Dreal_type=double
+
+flags += -fopenmp
+flags += -mavx512f
+flags += -mfma
+#flags += -Rpass=loop-vectorize
 
 ldflags :=
 

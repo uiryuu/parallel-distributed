@@ -81,6 +81,7 @@ static void err_cuda_code_non_cuda_compiler_(const char * file, int line, const 
 typedef enum {
   algo_cpu_base,
   algo_cuda_base,
+  algo_f,
   /* add your new algorithm here (name it arbitrarily) */
   /* algo_cpu_simd? */
   /* algo_cpu_omp */
@@ -104,9 +105,9 @@ static algo_t parse_algo(const char * s) {
   } else if (strcmp(s, "cuda_base") == 0) {
     return algo_cuda_base;
     /* add cases here to handle your algorithms
-       } else if (strcmp(s, "cpu_fast") == 0) {
-       return algo_cpu_fast;
     */
+  } else if (strcmp(s, "f") == 0) {
+    return algo_f;
   } else {
     return algo_invalid;
   }
