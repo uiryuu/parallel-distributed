@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 extract_time() {
   sed 's@<[^<]*>@@g' | grep took | sed 's@took \([0-9]*\) nsec@\1@g' | awk -F'[:.]' '{printf "%-15d\t%s::%s\n", $6, $2, $4}' | sort -nk1
 }

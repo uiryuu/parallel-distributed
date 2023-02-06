@@ -19,11 +19,11 @@ struct Convolution2DCfg { };
    @brief convolution of images
 
    @param (maxB) the maximum number of images it can handle at a time (batch size)
-   @param (IC) the number of channels per input image (the 
+   @param (IC) the number of channels per input image (the
                original input image for MNIST has is grey scale
-               and therefore has a single channel. 
+               and therefore has a single channel.
                hidden layers have 32 or 64 channels.
-   @param (H) height of an image (28 for an input image, 26 after the first 
+   @param (H) height of an image (28 for an input image, 26 after the first
               convolution layer and 24 after the second)
    @param (W) width of an image (same as H)
    @param (K) convolution kernel size (3 for MNIST). filter is K x K
@@ -40,8 +40,8 @@ struct Convolution2D {
   cmdline_opt opt;                 /**< command line option  */
   logger * lgr;                    /**< logger */
   tensor<real,maxB,IC,H,W>* x_ptr;    /**< pointer to the input to forward (x) */
-  tensor<real,OC,IC,K,K> w;           /**< weight (y = w ＊ x + b) */ 
-  tensor<real,OC> b;                  /**< bias (y = w ＊ x + b) */ 
+  tensor<real,OC,IC,K,K> w;           /**< weight (y = w ＊ x + b) */
+  tensor<real,OC> b;                  /**< bias (y = w ＊ x + b) */
   tensor<real,maxB,OC,H-K+1,W-K+1> y; /**< layer output */
   tensor<real,OC,IC,K,K> gw;          /**< ∂L/∂w */
   tensor<real,OC> gb;                 /**< ∂L/∂b */
@@ -71,7 +71,7 @@ struct Convolution2D {
      @brief set the device pointer for this and all subobjects
      @param (dev) a device memory or null
 
-     @details if dev is not null, dev fields of all subojects 
+     @details if dev is not null, dev fields of all subojects
      point to the corresponding subjects in the device memory.
      if dev is not null, all dev fields become null.
   */
@@ -112,7 +112,7 @@ struct Convolution2D {
     opt_b.update(b, gb);
   }
   /**
-     @brief the device function of update called from the 
+     @brief the device function of update called from the
      global (non-member) function
      @sa update
      @sa update_cuda_base
@@ -124,7 +124,7 @@ struct Convolution2D {
     update_base();
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (update)
      @sa update
      @sa update_cuda_base_device
@@ -140,7 +140,7 @@ struct Convolution2D {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (update)
      @sa update
      @sa update_base
@@ -197,7 +197,7 @@ struct Convolution2D {
      @sa forward_cuda_base_global
      @sa forward_cuda_base_device
   */
-  __device__ __host__ 
+  __device__ __host__
   void forward_base(tensor<real,maxB,IC,H,W>& x, int training) {
     (void)training;
     idx_t B = x.n0;             // batch size
@@ -249,7 +249,7 @@ struct Convolution2D {
     }
   }
   /**
-     @brief the device function of forward called from the 
+     @brief the device function of forward called from the
      global (non-member) function
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -263,7 +263,7 @@ struct Convolution2D {
     forward_base(x, training);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -282,7 +282,7 @@ struct Convolution2D {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -320,7 +320,7 @@ struct Convolution2D {
         forward_cuda_base(x, training);
       } else {
         forward_cpu_base(x, training);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);
@@ -341,7 +341,7 @@ struct Convolution2D {
      @sa backward_cuda_base_device
      @sa backward_base
   */
-  __device__ __host__ 
+  __device__ __host__
   void backward_base(tensor<real,maxB,OC,H-K+1,W-K+1>& gy) {
     idx_t B = gy.n0;
     gw.set_n0(OC);
@@ -456,7 +456,7 @@ struct Convolution2D {
     }
   }
   /**
-     @brief the device function of backward called from the 
+     @brief the device function of backward called from the
      global (non-member) function
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -469,7 +469,7 @@ struct Convolution2D {
     backward_base(gy);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -486,7 +486,7 @@ struct Convolution2D {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -527,7 +527,7 @@ struct Convolution2D {
         backward_cuda_base(gy);
       } else {
         backward_cpu_base(gy);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);

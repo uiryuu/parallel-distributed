@@ -9,7 +9,7 @@
 # - you can add your version(s) by adding lines like
 #   vers += name (e.g., vers += fast)
 # - by default, the version you added will be compiled
-#   by the same compiler and flags, some of which you 
+#   by the same compiler and flags, some of which you
 #   surely want to change
 # - to do this, you can set various flags.
 #   let's say your version is named "simd". then,
@@ -56,7 +56,7 @@ flags += -mfma
 ldflags :=
 
 #
-# flags given to all versions compiled by g++ 
+# flags given to all versions compiled by g++
 #
 g++_flags :=
 g++_flags += -Wall
@@ -65,7 +65,7 @@ g++_flags += -Wno-strict-overflow
 g++_ldflags :=
 
 #
-# flags given to all versions compiled by clang++ 
+# flags given to all versions compiled by clang++
 #
 clang++_flags :=
 clang++_flags += -Wall
@@ -75,7 +75,7 @@ clang++_flags += -gdwarf-4
 clang++_ldflags :=
 
 #
-# flags given to all versions compiled by nvc++ 
+# flags given to all versions compiled by nvc++
 #
 nvc++_flags :=
 nvc++_flags += -Wall
@@ -85,14 +85,14 @@ nvc++_ldflags :=
 #
 # flags given to all versions compiled by nvcc
 #
-nvcc_flags := 
+nvcc_flags :=
 nvcc_flags += -x cu
 nvcc_flags += --gpu-code sm_80
 nvcc_flags += --gpu-architecture compute_80
 #nvcc_flags += --maxrregcount 64
-#nvcc_flags += 
+#nvcc_flags +=
 #nvcc_flags += -Xptxas -O0,-v -G
-nvcc_ldflags := 
+nvcc_ldflags :=
 
 #
 # C++ compiler for versions
@@ -115,14 +115,14 @@ fast_cc := mnist.cc
 # version-specific flags
 #
 
-cpu_base_flags := 
-cpu_base_ldflags := 
+cpu_base_flags :=
+cpu_base_ldflags :=
 
-cuda_base_flags := 
-cuda_base_ldflags := 
+cuda_base_flags :=
+cuda_base_ldflags :=
 
-fast_flags := 
-fast_ldflags := 
+fast_flags :=
+fast_ldflags :=
 
 #
 # version- and compiler-specific flags
@@ -172,7 +172,7 @@ headers := $(wildcard include/*.h)
 #
 define compile
 exe/mnist_$(ver) : $($(ver)_cc) $(headers) exe/dir
-	$($(ver)_cxx) $(flags) $($($(ver)_cxx)_flags) $($(ver)_flags) $($(ver)_$($(ver)_cxx)_flags) -o $$@ $($(ver)_cc) $(ldflags) $($($(ver)_cxx)_ldflags) $($(ver)_ldflags) $($(ver)_$($(ver)_cxx)_ldflags) 
+	$($(ver)_cxx) $(flags) $($($(ver)_cxx)_flags) $($(ver)_flags) $($(ver)_$($(ver)_cxx)_flags) -o $$@ $($(ver)_cc) $(ldflags) $($($(ver)_cxx)_ldflags) $($(ver)_ldflags) $($(ver)_$($(ver)_cxx)_ldflags)
 endef
 
 targets := $(foreach ver,$(vers),exe/mnist_$(ver))
@@ -198,7 +198,7 @@ docs/tags/HTML/index.html : docs/tags/dir $(tag_srcs)
 docs/tags/dir :
 	mkdir -p $@
 
-doc : docs/doxy/html/index.html 
+doc : docs/doxy/html/index.html
 doc : docs/tags/HTML/index.html
 
 clean :

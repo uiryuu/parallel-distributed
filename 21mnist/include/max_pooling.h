@@ -23,7 +23,7 @@ struct MaxPooling2DCfg { };
    @param (W) width of an image
    @param (S) shrink factor of pooling layers (2)
 
-   @details this layer implements max pooling. it takes SxS patch of 
+   @details this layer implements max pooling. it takes SxS patch of
    input images and take the maximum of it. given an HxW image,
    output (H/S)x(W/S) image
 
@@ -56,7 +56,7 @@ struct MaxPooling2D {
      @brief set the device pointer for this and all subobjects
      @param (dev) a device memory or null
 
-     @details if dev is not null, dev fields of all subojects 
+     @details if dev is not null, dev fields of all subojects
      point to the corresponding subjects in the device memory.
      if dev is not null, all dev fields become null.
   */
@@ -120,8 +120,39 @@ struct MaxPooling2D {
       }
     }
   }
+  void forward_f(tensor<real,maxB,C,H,W>& x, int training) {
+    (void)training;
+    const idx_t B = x.n0;
+    y.set_n0(B);
+    argmax_i.set_n0(B);
+    argmax_j.set_n0(B);
+    #pragma omp parallel for
+    for (idx_t s = 0; s < B; s++) {
+      for (idx_t c = 0; c < C; c++) {
+        for (idx_t i = 0; i < H/S; i++) {
+          for (idx_t j = 0; j < W/S; j++) {
+            idx_t max_i = S * i;
+            idx_t max_j = S * j;
+            real v = x(s,c,max_i,max_j);
+            for (idx_t i_ = S * i; i_ < S * (i + 1); i_++) {
+              for (idx_t j_ = S * j; j_ < S * (j + 1); j_++) {
+                if (v < x(s,c,i_,j_)) {
+                  max_i = i_;
+                  max_j = j_;
+                  v = x(s,c,max_i,max_j);
+                }
+              }
+            }
+            y(s,c,i,j) = v;
+            argmax_i(s,c,i,j) = max_i;
+            argmax_j(s,c,i,j) = max_j;
+          }
+        }
+      }
+    }
+  }
   /**
-     @brief the device function of forward called from the 
+     @brief the device function of forward called from the
      global (non-member) function
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -135,7 +166,7 @@ struct MaxPooling2D {
     forward_base(x, training);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -154,7 +185,7 @@ struct MaxPooling2D {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -181,6 +212,8 @@ struct MaxPooling2D {
     tsc_t t0 = get_tsc();
     switch (opt.algo) {
       /* add case for your implementations here */
+    case algo_f:
+      forward_f(x, training); break;
     case algo_cpu_base:
       forward_cpu_base(x, training); break;
     case algo_cuda_base:
@@ -190,7 +223,7 @@ struct MaxPooling2D {
         forward_cuda_base(x, training);
       } else {
         forward_cpu_base(x, training);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);
@@ -236,8 +269,34 @@ struct MaxPooling2D {
       }
     }
   }
+  void backward_f(tensor<real,maxB,C,H/S,W/S>& gy) {
+    const idx_t B = gy.n0;
+    gx.set_n0(B);
+    #pragma omp parallel for
+    for (idx_t s = 0; s < B; s++) {
+      for (idx_t c = 0; c < C; c++) {
+        for (idx_t i = 0; i < H; i++) {
+          for (idx_t j = 0; j < W; j++) {
+            gx(s,c,i,j) = 0;
+          }
+        }
+      }
+    }
+    #pragma omp parallel for
+    for (idx_t s = 0; s < B; s++) {
+      for (idx_t c = 0; c < C; c++) {
+        for (idx_t i = 0; i < H/S; i++) {
+          for (idx_t j = 0; j < W/S; j++) {
+            idx_t i_ = argmax_i(s,c,i,j);
+            idx_t j_ = argmax_j(s,c,i,j);
+            gx(s,c,i_,j_) = gy(s,c,i,j);
+          }
+        }
+      }
+    }
+  }
   /**
-     @brief the device function of backward called from the 
+     @brief the device function of backward called from the
      global (non-member) function
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -250,7 +309,7 @@ struct MaxPooling2D {
     backward_base(gy);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -267,7 +326,7 @@ struct MaxPooling2D {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -297,6 +356,8 @@ struct MaxPooling2D {
     tsc_t t0 = get_tsc();
     switch (opt.algo) {
       /* add case for your implementations here */
+    case algo_f:
+      backward_f(gy); break;
     case algo_cpu_base:
       backward_cpu_base(gy); break;
     case algo_cuda_base:
@@ -306,7 +367,7 @@ struct MaxPooling2D {
         backward_cuda_base(gy);
       } else {
         backward_cpu_base(gy);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);

@@ -24,7 +24,7 @@ struct DropoutCfg {
    @param (N2) third dimension
    @param (N3) fourth dimension
 
-   @details y(i0,i1,i2,i3) = 0 with a specified probability 
+   @details y(i0,i1,i2,i3) = 0 with a specified probability
                              x(i0,i1,i2,i3) otherwise
    for all i0, i1, i2 and i3.
 
@@ -59,7 +59,7 @@ struct Dropout {
      @brief set the device pointer for this and all subobjects
      @param (dev) a device memory or null
 
-     @details if dev is not null, dev fields of all subojects 
+     @details if dev is not null, dev fields of all subojects
      point to the corresponding subjects in the device memory.
      if dev is not null, all dev fields become null.
   */
@@ -94,7 +94,7 @@ struct Dropout {
     const idx_t n0 = x.n0;
     y.set_n0(n0);
     /* zero elements with probability of ratio and
-       scale others by 1/(1-ratio) so that the sum 
+       scale others by 1/(1-ratio) so that the sum
        will stay approximately the same */
     state_forward = rg.get_state();
     real p = training ? drop_ratio : 0.0;
@@ -113,8 +113,32 @@ struct Dropout {
       }
     }
   }
+  void forward_f(tensor<real,N0,N1,N2,N3>& x, int training) {
+    const idx_t n0 = x.n0;
+    y.set_n0(n0);
+    /* zero elements with probability of ratio and
+       scale others by 1/(1-ratio) so that the sum
+       will stay approximately the same */
+    state_forward = rg.get_state();
+    real p = training ? drop_ratio : 0.0;
+    real scale = 1.0 / (1 - p);
+    #pragma omp parallel for
+    for (idx_t i0 = 0; i0 < n0; i0++) {
+      for (idx_t i1 = 0; i1 < N1; i1++) {
+        for (idx_t i2 = 0; i2 < N2; i2++) {
+          for (idx_t i3 = 0; i3 < N3; i3++) {
+            if (rg.rand01() < p) {
+              y(i0,i1,i2,i3) = 0.0;
+            } else {
+              y(i0,i1,i2,i3) = x(i0,i1,i2,i3) * scale;
+            }
+          }
+        }
+      }
+    }
+  }
   /**
-     @brief the device function of forward called from the 
+     @brief the device function of forward called from the
      global (non-member) function
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -128,7 +152,7 @@ struct Dropout {
     forward_base(x, training);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -147,7 +171,7 @@ struct Dropout {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -174,6 +198,8 @@ struct Dropout {
     tsc_t t0 = get_tsc();
     switch (opt.algo) {
       /* add case for your implementations here */
+    case algo_f:
+      forward_f(x, training); break;
     case algo_cpu_base:
       forward_cpu_base(x, training); break;
     case algo_cuda_base:
@@ -183,7 +209,7 @@ struct Dropout {
         forward_cuda_base(x, training);
       } else {
         forward_cpu_base(x, training);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);
@@ -224,8 +250,28 @@ struct Dropout {
       }
     }
   }
+  void backward_f(tensor<real,N0,N1,N2,N3>& gy) {
+    const idx_t n0 = gy.n0;
+    gx.set_n0(n0);
+    rg.seed(state_forward);
+    real scale = 1.0 / (1 - drop_ratio);
+    #pragma omp parallel for
+    for (idx_t i0 = 0; i0 < n0; i0++) {
+      for (idx_t i1 = 0; i1 < N1; i1++) {
+        for (idx_t i2 = 0; i2 < N2; i2++) {
+          for (idx_t i3 = 0; i3 < N3; i3++) {
+            if (rg.rand01() < drop_ratio) {
+              gx(i0,i1,i2,i3) = 0.0;
+            } else {
+              gx(i0,i1,i2,i3) = scale * gy(i0,i1,i2,i3);
+            }
+          }
+        }
+      }
+    }
+  }
   /**
-     @brief the device function of backward called from the 
+     @brief the device function of backward called from the
      global (non-member) function
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -238,7 +284,7 @@ struct Dropout {
     backward_base(gy);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -255,7 +301,7 @@ struct Dropout {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -285,6 +331,8 @@ struct Dropout {
     tsc_t t0 = get_tsc();
     switch (opt.algo) {
       /* add case for your implementations here */
+    case algo_f:
+      backward_f(gy); break;
     case algo_cpu_base:
       backward_cpu_base(gy); break;
     case algo_cuda_base:
@@ -294,7 +342,7 @@ struct Dropout {
         backward_cuda_base(gy);
       } else {
         backward_cpu_base(gy);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);

@@ -22,7 +22,7 @@ struct ReluCfg { };
    @param (N2) third dimension
    @param (N3) fourth dimension
 
-   @details y(i0,i1,i2,i3) = max(0, x(i0,i1,i2,i3)) 
+   @details y(i0,i1,i2,i3) = max(0, x(i0,i1,i2,i3))
    for all i0, i1, i2 and i3.
 
  */
@@ -53,7 +53,7 @@ struct Relu {
      @brief set the device pointer for this and all subobjects
      @param (dev) a device memory or null
 
-     @details if dev is not null, dev fields of all subojects 
+     @details if dev is not null, dev fields of all subojects
      point to the corresponding subjects in the device memory.
      if dev is not null, all dev fields become null.
   */
@@ -100,8 +100,25 @@ struct Relu {
       }
     }
   }
+
+  void forward_f(tensor<real,N0,N1,N2,N3>& x, int training) {
+    (void)training;
+    const idx_t n0 = x.n0;
+    y.set_n0(n0);
+    x_ptr = &x;
+    #pragma omp parallel for
+    for (idx_t i0 = 0; i0 < n0; i0++) {
+      for (idx_t i1 = 0; i1 < N1; i1++) {
+        for (idx_t i2 = 0; i2 < N2; i2++) {
+          for (idx_t i3 = 0; i3 < N3; i3++) {
+            y(i0,i1,i2,i3) = max_r(0, x(i0,i1,i2,i3));
+          }
+        }
+      }
+    }
+  }
   /**
-     @brief the device function of forward called from the 
+     @brief the device function of forward called from the
      global (non-member) function
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -115,7 +132,7 @@ struct Relu {
     forward_base(x, training);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -134,7 +151,7 @@ struct Relu {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -161,6 +178,8 @@ struct Relu {
     tsc_t t0 = get_tsc();
     switch (opt.algo) {
       /* add case for your implementations here */
+    case algo_f:
+        forward_cpu_f(x, training); break;
     case algo_cpu_base:
       forward_cpu_base(x, training); break;
     case algo_cuda_base:
@@ -170,7 +189,7 @@ struct Relu {
         forward_cuda_base(x, training);
       } else {
         forward_cpu_base(x, training);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);
@@ -206,8 +225,23 @@ struct Relu {
       }
     }
   }
+  void backward_f(tensor<real,N0,N1,N2,N3>& gy) {
+    const idx_t n0 = gy.n0;
+    gx.set_n0(n0);
+    tensor<real,N0,N1,N2,N3>& x = *x_ptr;
+    #pragma omp parallel for
+    for (idx_t i0 = 0; i0 < n0; i0++) {
+      for (idx_t i1 = 0; i1 < N1; i1++) {
+        for (idx_t i2 = 0; i2 < N2; i2++) {
+          for (idx_t i3 = 0; i3 < N3; i3++) {
+            gx(i0,i1,i2,i3) = (x(i0,i1,i2,i3) >= 0 ? gy(i0,i1,i2,i3) : 0);
+          }
+        }
+      }
+    }
+  }
   /**
-     @brief the device function of backward called from the 
+     @brief the device function of backward called from the
      global (non-member) function
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -220,7 +254,7 @@ struct Relu {
     backward_base(gy);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -237,7 +271,7 @@ struct Relu {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -267,6 +301,8 @@ struct Relu {
     tsc_t t0 = get_tsc();
     switch (opt.algo) {
       /* add case for your implementations here */
+    case algo_f:
+      backward_f(gy); break;
     case algo_cpu_base:
       backward_cpu_base(gy); break;
     case algo_cuda_base:
@@ -276,7 +312,7 @@ struct Relu {
         backward_cuda_base(gy);
       } else {
         backward_cpu_base(gy);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);
