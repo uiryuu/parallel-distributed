@@ -228,7 +228,8 @@ struct Convolution2D {
     idx_t B = x.n0;             // batch size
     y.set_n0(B);
     x_ptr = &x;                 // save pointer to input for backward
-    for (idx_t s = 0; s < B; s++) {       // for each sample
+    #pragma omp parallel for
+    for (idx_t s = 0; s < B; s++) {       // for each sampl e
       for (idx_t oc = 0; oc < OC; oc++) { // for each output channel
         for (idx_t i = 0; i < H - K + 1; i++) {   // for each output pixel
           for (idx_t j = 0; j < W - K + 1; j++) { // for each output pixel
@@ -396,6 +397,64 @@ struct Convolution2D {
       }
     }
   }
+    void backward_f(tensor<real,maxB,OC,H-K+1,W-K+1>& gy) {
+    idx_t B = gy.n0;
+    gw.set_n0(OC);
+    gb.set_n0(OC);
+    gx.set_n0(B);
+    tensor<real,maxB,IC,H,W>& x = *x_ptr;
+    #pragma omp parallel for
+    for (idx_t oc = 0; oc < OC; oc++) {   // output channel
+      for (idx_t ic = 0; ic < IC; ic++) { // input channel
+        for (idx_t di = 0; di < K; di++) { // kernel pixel
+          for (idx_t dj = 0; dj < K; dj++) { // kernel pixel
+            real v = 0.0;
+            for (idx_t s = 0; s < B; s++) { // training samples
+              for (idx_t i = 0; i < H - K + 1; i++) { // sample pixel
+                for (idx_t j = 0; j < W - K + 1; j++) { // sample pixel
+                  v += gy(s,oc,i,j) * x(s,ic,i+di,j+dj);
+                }
+              }
+            }
+            gw(oc,ic,di,dj) = v;
+          }
+        }
+      }
+    }
+    #pragma omp parallel for
+    for (idx_t oc = 0; oc < OC; oc++) {
+      real v = 0.0;
+      for (idx_t s = 0; s < B; s++) {
+        for (idx_t i = 0; i < H - K + 1; i++) {
+          for (idx_t j = 0; j < W - K + 1; j++) {
+            v += gy(s,oc,i,j);
+          }
+        }
+      }
+      gb(oc) = v;
+    }
+    #pragma omp parallel for
+    for (idx_t s = 0; s < B; s++) {
+      for (idx_t ic = 0; ic < IC; ic++) {
+        for (idx_t i = 0; i < H; i++) {
+          for (idx_t j = 0; j < W; j++) {
+            real v = 0.0;
+            for (idx_t oc = 0; oc < OC; oc++) {
+              for (idx_t di = 0; di < K; di++) {
+                for (idx_t dj = 0; dj < K; dj++) {
+                  if (0 <= i - di && i - di < H - K + 1
+                      && 0 <= j - dj && j - dj < W - K + 1) {
+                    v += gy(s,oc,i-di,j-dj) * w(oc,ic,di,dj);
+                  }
+                }
+              }
+            }
+            gx(s,ic,i,j) = v;
+          }
+        }
+      }
+    }
+  }
   /**
      @brief the device function of backward called from the 
      global (non-member) function
@@ -461,6 +520,8 @@ struct Convolution2D {
       backward_cpu_base(gy); break;
     case algo_cuda_base:
       backward_cuda_base(gy); break;
+    case algo_f:
+      backward_f(gy); break;
     default:
       if (opt.cuda_algo) {
         backward_cuda_base(gy);
