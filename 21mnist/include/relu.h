@@ -179,7 +179,7 @@ struct Relu {
     switch (opt.algo) {
       /* add case for your implementations here */
     case algo_f:
-        forward_cpu_f(x, training); break;
+        forward_f(x, training); break;
     case algo_cpu_base:
       forward_cpu_base(x, training); break;
     case algo_cuda_base:
