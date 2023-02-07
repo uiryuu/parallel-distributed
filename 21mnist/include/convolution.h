@@ -444,8 +444,7 @@ struct Convolution2D {
                               gy(s,oc+12,i,j),
                               gy(s,oc+13,i,j),
                               gy(s,oc+14,i,j),
-                              gy(s,oc+15,i,j)
-                          );
+                              gy(s,oc+15,i,j));
                   pv = _mm512_fmadd_ps(pgy, px, pv);
                 }
 
@@ -461,16 +460,39 @@ struct Convolution2D {
       }
     }
     #pragma omp parallel for
-    for (idx_t oc = 0; oc < OC; oc++) {
-      real v = 0.0;
+    for (idx_t oc = 0; oc < OC; oc += 16) {
+      // real v = 0.0;
+      auto pv = _mm512_set1_ps(0);
       for (idx_t s = 0; s < B; s++) {
         for (idx_t i = 0; i < H - K + 1; i++) {
           for (idx_t j = 0; j < W - K + 1; j++) {
-            v += gy(s,oc,i,j);
+            // v += gy(s,oc,i,j);
+            auto pgy = _mm512_set_ps(
+                      gy(s,oc+0,i,j),
+                      gy(s,oc+1,i,j),
+                      gy(s,oc+2,i,j),
+                      gy(s,oc+3,i,j),
+                      gy(s,oc+4,i,j),
+                      gy(s,oc+5,i,j),
+                      gy(s,oc+6,i,j),
+                      gy(s,oc+7,i,j),
+                      gy(s,oc+8,i,j),
+                      gy(s,oc+9,i,j),
+                      gy(s,oc+10,i,j),
+                      gy(s,oc+11,i,j),
+                      gy(s,oc+12,i,j),
+                      gy(s,oc+13,i,j),
+                      gy(s,oc+14,i,j),
+                      gy(s,oc+15,i,j));
+            pv = _mm512_add_ps(pv, pgy);
           }
         }
       }
-      gb(oc) = v;
+      real t[20];
+      _mm512_store_ps(t, pv);
+      for (int z = 0; z < 16; ++z)
+          gb(oc+z) = t[z];
+      // gb(oc) = v;
     }
     #pragma omp parallel for
     for (idx_t s = 0; s < B; s++) {
