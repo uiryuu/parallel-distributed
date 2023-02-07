@@ -415,7 +415,7 @@ struct Convolution2D {
     exit(0);
 */
 
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(4)
     for (idx_t oc = 0; oc < OC; oc += 16) {   // output channel
       for (idx_t ic = 0; ic < IC; ic++) { // input channel
         for (idx_t di = 0; di < K; di++) { // kernel pixel
@@ -473,7 +473,7 @@ struct Convolution2D {
       gb(oc) = v;
     }
 
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(4)
     for (idx_t s = 0; s < B; s += 16) {
       for (idx_t ic = 0; ic < IC; ic++) {
         for (idx_t i = 0; i < H; i++) {
