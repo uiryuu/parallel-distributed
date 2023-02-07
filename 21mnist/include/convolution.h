@@ -451,7 +451,7 @@ struct Convolution2D {
 
               }
             }
-            static real t[20];
+            static real t[100];
             _mm512_store_ps(t, pv);
             for (int z = 0; z < 16; ++z)
                 gw(oc+z,ic,di,dj) = t[z];
