@@ -397,26 +397,65 @@ struct Convolution2D {
       }
     }
   }
-    void backward_f(tensor<real,maxB,OC,H-K+1,W-K+1>& gy) {
+  void backward_f(tensor<real,maxB,OC,H-K+1,W-K+1>& gy) {
     idx_t B = gy.n0;
     gw.set_n0(OC);
     gb.set_n0(OC);
     gx.set_n0(B);
     tensor<real,maxB,IC,H,W>& x = *x_ptr;
+/*
+    printf("OC = %d\n", OC);
+    printf("IC = %d\n", IC);
+    printf("K = %d\n", K);
+    printf("B = %d\n", B);
+    printf("H = %d\n", H);
+    printf("W = %d\n", W);
+    printf("H-K+1 = %d\n", H-K+1);
+    printf("W-K+1 = %d\n", W-K+1);
+    exit(0);
+*/
+
     #pragma omp parallel for
-    for (idx_t oc = 0; oc < OC; oc++) {   // output channel
+    for (idx_t oc = 0; oc < OC; oc += 16) {   // output channel
       for (idx_t ic = 0; ic < IC; ic++) { // input channel
         for (idx_t di = 0; di < K; di++) { // kernel pixel
           for (idx_t dj = 0; dj < K; dj++) { // kernel pixel
-            real v = 0.0;
+            // real v = 0.0;
+            auto pv = _mm512_set1_ps(0);
             for (idx_t s = 0; s < B; s++) { // training samples
               for (idx_t i = 0; i < H - K + 1; i++) { // sample pixel
+
                 for (idx_t j = 0; j < W - K + 1; j++) { // sample pixel
-                  v += gy(s,oc,i,j) * x(s,ic,i+di,j+dj);
+                  // v += gy(s,oc,i,j) * x(s,ic,i+di,j+dj);
+                  auto px = _mm512_set1_ps(x(s,ic,i+di,j+dj));
+                  auto pgy = _mm512_set_ps(
+                              gy(s,oc+0,i,j),
+                              gy(s,oc+1,i,j),
+                              gy(s,oc+2,i,j),
+                              gy(s,oc+3,i,j),
+                              gy(s,oc+4,i,j),
+                              gy(s,oc+5,i,j),
+                              gy(s,oc+6,i,j),
+                              gy(s,oc+7,i,j),
+                              gy(s,oc+8,i,j),
+                              gy(s,oc+9,i,j),
+                              gy(s,oc+10,i,j),
+                              gy(s,oc+11,i,j),
+                              gy(s,oc+12,i,j),
+                              gy(s,oc+13,i,j),
+                              gy(s,oc+14,i,j),
+                              gy(s,oc+15,i,j),
+                          );
+                  pv = _mm512_fmadd_ps(pgy, px, pv);
                 }
+
               }
             }
-            gw(oc,ic,di,dj) = v;
+            static real t[20];
+            _mm512_store_ps(t, pv);
+            for (int z = 0; z < 16; ++z)
+                gw(oc+z,ic,di,dj) = t[z];
+            // gw(oc,ic,di,dj) = v;
           }
         }
       }

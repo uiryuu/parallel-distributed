@@ -6,6 +6,7 @@
 #pragma once
 
 #include <stdio.h>
+#include <immintrin.h>
 #ifndef ARRAY_INDEX_CHECK
 #define ARRAY_INDEX_CHECK 1
 #endif
@@ -21,15 +22,15 @@
    @param (b_str) the string representation of b
    @param (file) the file name from which it gets called
    @param (line) the line number from which it gets called
-   @details it checks if a<=x<b holds. if not, it shows an 
+   @details it checks if a<=x<b holds. if not, it shows an
    error message. on cpu, the error message contains
    the location where the error happened.
  */
 __attribute__((unused))
-__device__ __host__ 
+__device__ __host__
 static void range_chk_(idx_t a, idx_t x, idx_t b,
                        const char * a_str, const char * x_str,
-                       const char * b_str, 
+                       const char * b_str,
                        const char * file, int line) {
 #if ! __CUDA_ARCH__
   if (!(a <= x)) {
@@ -52,19 +53,19 @@ static void range_chk_(idx_t a, idx_t x, idx_t b,
 }
 
 #if ARRAY_INDEX_CHECK
-/** 
+/**
     @brief array bounds check. turn off (on) if -DARRAY_INDEX_CHECK=0 (1) is given.
     turn it on when you are debugging your code.
     turn it off when you are measuring the performance.
 */
 #define range_chk(a, x, b) range_chk_(a, x, b, #a, #x, #b, __FILE__, __LINE__)
 #else
-/** 
+/**
     @brief array bounds check. turn off (on) if -DARRAY_INDEX_CHECK=0 (1) is given.
     turn it on when you are debugging your code.
     turn it off when you are measuring the performance.
 */
-#define range_chk(a, x, b) 
+#define range_chk(a, x, b)
 #endif
 
 
@@ -74,7 +75,7 @@ static void range_chk_(idx_t a, idx_t x, idx_t b,
    @param (C) the number of elements along the second dimension
    @param (H) the number of elements along the third dimension
    @param (W) the number of elements along the fourth dimension
-   @details this is essentially BxCxHxW array of reals where B 
+   @details this is essentially BxCxHxW array of reals where B
    can be a runtime parameter <= maxB.
    throughout the MNIST network, is is used to represent a mini-batch
    of images (B images, each image of which has C channels, each channel
@@ -94,7 +95,7 @@ struct tensor {
      @param (i) the third index (row index in a channel)
      @param (j) the fourth index (column index in a row)
   */
-  __device__ __host__ 
+  __device__ __host__
   T& operator()(idx_t i0, idx_t i1=0, idx_t i2=0, idx_t i3=0) {
     range_chk(0, i0, n0);
     range_chk(0, i1, N1);
@@ -106,7 +107,7 @@ struct tensor {
      @brief set the number of elements along the first dimension
      @param (N) the number of elements specified
   */
-  __device__ __host__ 
+  __device__ __host__
   void set_n0(idx_t n0) {
     assert(n0 <= N0);
     this->n0 = n0;
@@ -369,7 +370,7 @@ struct tensor {
     return s0;
   }
   /**
-     
+
    */
   void print() {
     tensor<T,N0,N1,N2,N3>& a = *this;
