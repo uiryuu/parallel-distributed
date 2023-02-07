@@ -444,7 +444,7 @@ struct Convolution2D {
                               gy(s,oc+12,i,j),
                               gy(s,oc+13,i,j),
                               gy(s,oc+14,i,j),
-                              gy(s,oc+15,i,j),
+                              gy(s,oc+15,i,j)
                           );
                   pv = _mm512_fmadd_ps(pgy, px, pv);
                 }
