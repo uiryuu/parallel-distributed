@@ -228,7 +228,7 @@ struct Convolution2D {
     idx_t B = x.n0;             // batch size
     y.set_n0(B);
     x_ptr = &x;                 // save pointer to input for backward
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(4)
     for (idx_t s = 0; s < B; s++) {       // for each sampl e
       for (idx_t oc = 0; oc < OC; oc++) { // for each output channel
         for (idx_t i = 0; i < H - K + 1; i++) {   // for each output pixel
@@ -397,6 +397,7 @@ struct Convolution2D {
       }
     }
   }
+
   void backward_f(tensor<real,maxB,OC,H-K+1,W-K+1>& gy) {
     idx_t B = gy.n0;
     gw.set_n0(OC);
