@@ -450,8 +450,8 @@ struct Convolution2D {
 
               }
             }
-            _mm512_store_ps(t, pv);
             real t[20];
+            _mm512_store_ps(t, pv);
             #pragma omp parallel for
             for (int z = 0; z < 16; ++z)
                 gw(oc+z,ic,di,dj) = t[z];
