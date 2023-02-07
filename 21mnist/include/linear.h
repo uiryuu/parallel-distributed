@@ -158,8 +158,6 @@ struct Linear {
     tsc_t t0 = get_tsc();
     switch (opt.algo) {
       /* add case for your implementations here */
-    case algo_f:
-      update_f(); break;
     case algo_cpu_base:
       update_cpu_base(); break;
     case algo_cuda_base:
