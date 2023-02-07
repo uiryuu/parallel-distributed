@@ -229,20 +229,44 @@ struct Convolution2D {
     y.set_n0(B);
     x_ptr = &x;                 // save pointer to input for backward
     #pragma omp parallel for collapse(4)
-    for (idx_t s = 0; s < B; s++) {       // for each sampl e
+    for (idx_t s = 0; s < B; s += 16) {       // for each sampl e
       for (idx_t oc = 0; oc < OC; oc++) { // for each output channel
         for (idx_t i = 0; i < H - K + 1; i++) {   // for each output pixel
           for (idx_t j = 0; j < W - K + 1; j++) { // for each output pixel
             // calculate a single output pixel
-            real v = 0.0;
+            // real v = 0.0;
+            auto pv = _mm512_set1_ps(0);
             for (idx_t ic = 0; ic < IC; ic++) { // input channel
               for (idx_t di = 0; di < K; di++) {
                 for (idx_t dj = 0; dj < K; dj++) {
-                  v += w(oc,ic,di,dj) * x(s,ic,i+di,j+dj);
+                  // v += w(oc,ic,di,dj) * x(s,ic,i+di,j+dj);
+                  auto pw = _mm512_set1_ps(w(oc,ic,di,dj));
+                  auto px = _mm512_set_ps(
+                        x(s+0,ic,i+di,j+dj),
+                        x(s+1,ic,i+di,j+dj),
+                        x(s+2,ic,i+di,j+dj),
+                        x(s+3,ic,i+di,j+dj),
+                        x(s+4,ic,i+di,j+dj),
+                        x(s+5,ic,i+di,j+dj),
+                        x(s+6,ic,i+di,j+dj),
+                        x(s+7,ic,i+di,j+dj),
+                        x(s+8,ic,i+di,j+dj),
+                        x(s+9,ic,i+di,j+dj),
+                        x(s+10,ic,i+di,j+dj),
+                        x(s+11,ic,i+di,j+dj),
+                        x(s+12,ic,i+di,j+dj),
+                        x(s+13,ic,i+di,j+dj),
+                        x(s+14,ic,i+di,j+dj),
+                        x(s+15,ic,i+di,j+dj));
+                  pv = _mm512_fmadd_ps(pw, px, pv);
                 }
               }
             }
-            y(s,oc,i,j) = v + b(oc);
+            // y(s,oc,i,j) = v + b(oc);
+            real t[20];
+            _mm512_store_ps(t, pv);
+            for (int z = 0; z < 16; ++z)
+                y(s+z,oc,i,j) = pv[z] + b(oc);
           }
         }
       }

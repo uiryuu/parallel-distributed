@@ -19,8 +19,8 @@ struct LinearCfg { };
 /**
    @brief linear (fully connected) layer
 
-   @param (M) 
-   @param (N) 
+   @param (M)
+   @param (N)
    @param (K0)
    @param (K1)
    @param (K2)
@@ -65,7 +65,7 @@ struct Linear {
      @brief set the device pointer for this and all subobjects
      @param (dev) a device memory or null
 
-     @details if dev is not null, dev fields of all subojects 
+     @details if dev is not null, dev fields of all subojects
      point to the corresponding subjects in the device memory.
      if dev is not null, all dev fields become null.
   */
@@ -107,7 +107,7 @@ struct Linear {
     opt_b.update(b, gb);
   }
   /**
-     @brief the device function of update called from the 
+     @brief the device function of update called from the
      global (non-member) function
      @sa update
      @sa update_cuda_base
@@ -119,7 +119,7 @@ struct Linear {
     update_base();
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (update)
      @sa update
      @sa update_cuda_base_device
@@ -134,7 +134,7 @@ struct Linear {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (update)
      @sa update
      @sa update_base
@@ -158,6 +158,8 @@ struct Linear {
     tsc_t t0 = get_tsc();
     switch (opt.algo) {
       /* add case for your implementations here */
+    case algo_f:
+      update_f(); break;
     case algo_cpu_base:
       update_cpu_base(); break;
     case algo_cuda_base:
@@ -167,7 +169,7 @@ struct Linear {
         update_cuda_base();
       } else {
         update_cpu_base();
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);
@@ -231,7 +233,7 @@ struct Linear {
     }
   }
   /**
-     @brief the device function of forward called from the 
+     @brief the device function of forward called from the
      global (non-member) function
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -245,7 +247,7 @@ struct Linear {
     forward_base(x, training);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -264,7 +266,7 @@ struct Linear {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (forward)
      @param (x) input images
      @param (training) 1 if it is called in training not testing
@@ -302,7 +304,7 @@ struct Linear {
         forward_cuda_base(x, training);
       } else {
         forward_cpu_base(x, training);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);
@@ -392,7 +394,7 @@ struct Linear {
         v += gy(i, j);
       }
       gb(j) = v;
-    } 
+    }
     #pragma omp parallel for
     for (idx_t i = 0; i < m; i++) {
       for (idx_t k0 = 0; k0 < K0; k0++) {
@@ -409,7 +411,7 @@ struct Linear {
     }
   }
   /**
-     @brief the device function of backward called from the 
+     @brief the device function of backward called from the
      global (non-member) function
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -422,7 +424,7 @@ struct Linear {
     backward_base(gy);
   }
   /**
-     @brief a cuda version of baseline code called from the 
+     @brief a cuda version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -439,7 +441,7 @@ struct Linear {
 #endif
   }
   /**
-     @brief a cpu version of baseline code called from the 
+     @brief a cpu version of baseline code called from the
      entry function (backward)
      @param (gy) gradient of loss with respect to the output
      @sa backward
@@ -480,7 +482,7 @@ struct Linear {
         backward_cuda_base(gy);
       } else {
         backward_cpu_base(gy);
-      }        
+      }
     }
     tsc_t t1 = get_tsc();
     log_end_fun(lgr, t0, t1);
