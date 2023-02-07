@@ -403,8 +403,6 @@ struct Convolution2D {
     gb.set_n0(OC);
     gx.set_n0(B);
     tensor<real,maxB,IC,H,W>& x = *x_ptr;
-
-    real t[20];
 /*
     printf("OC = %d\n", OC);
     printf("IC = %d\n", IC);
@@ -453,6 +451,8 @@ struct Convolution2D {
               }
             }
             _mm512_store_ps(t, pv);
+            real t[20];
+            #pragma omp parallel for
             for (int z = 0; z < 16; ++z)
                 gw(oc+z,ic,di,dj) = t[z];
             // gw(oc,ic,di,dj) = v;
@@ -511,7 +511,9 @@ struct Convolution2D {
               }
             }
             // gx(s,ic,i,j) = v;
+            real t[20];
             _mm512_store_ps(t, pv);
+            #pragma omp parallel for
             for (int z = 0; z < 16; ++z)
                 gx(s+z,ic,i,j) = t[z];
           }
