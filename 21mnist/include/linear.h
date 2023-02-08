@@ -215,7 +215,7 @@ struct Linear {
     const idx_t m = x.n0;
     y.set_n0(m);
     x_ptr = &x;
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(2)
     for (idx_t i = 0; i < m; i++) {
       for (idx_t j = 0; j < N; j++) {
         real v = 0.0;
@@ -371,7 +371,7 @@ struct Linear {
     gb.set_n0(N);
     gx.set_n0(m);
     tensor<real,M,K0,K1,K2>& x = *x_ptr;
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(4)
     for (idx_t k0 = 0; k0 < K0; k0++) {
       for (idx_t k1 = 0; k1 < K1; k1++) {
         for (idx_t k2 = 0; k2 < K2; k2++) {
@@ -385,6 +385,7 @@ struct Linear {
         }
       }
     }
+
     #pragma omp parallel for
     for (idx_t j = 0; j < N; j++) {
       real v = 0.0;
@@ -393,7 +394,8 @@ struct Linear {
       }
       gb(j) = v;
     }
-    #pragma omp parallel for
+
+    #pragma omp parallel for collapse(4)
     for (idx_t i = 0; i < m; i++) {
       for (idx_t k0 = 0; k0 < K0; k0++) {
         for (idx_t k1 = 0; k1 < K1; k1++) {
